@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>متابعة الاشتراكات</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#161a22;--mu:#6b7280;--bd:#e4e7ec;--pr:#2563eb;--prt:#fff;--ok:#15803d;--okb:#dcfce7;--wr:#b45309;--wrb:#fef3c7;--er:#b91c1c;--erb:#fee2e2;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--card:#181b22;--tx:#eef0f4;--mu:#9aa3b2;--bd:#2a2f3a;--pr:#5b8cff;--prt:#0b1020;--ok:#4ade80;--okb:#12301d;--wr:#fbbf24;--wrb:#3a2a0a;--er:#f87171;--erb:#3b1414;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1115;--card:#181b22;--tx:#eef0f4;--mu:#9aa3b2;--bd:#2a2f3a;--pr:#5b8cff;--prt:#0b1020;--ok:#4ade80;--okb:#12301d;--wr:#fbbf24;--wrb:#3a2a0a;--er:#f87171;--erb:#3b1414;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:880px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:24px}.stat span{font-size:13px;color:var(--mu)}
+.stat.hot b{color:var(--er)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.form .full{grid-column:1/-1}
+label{font-size:13px;color:var(--mu);display:block;margin-bottom:3px}
+input{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+input:focus{outline:2px solid var(--pr);outline-offset:0}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:11px 14px;background:var(--pr);color:var(--prt);font-weight:600}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+button.ok{background:var(--okb);color:var(--ok)}button.er{background:var(--erb);color:var(--er)}
+.tabs{display:flex;gap:8px;margin:14px 0;overflow-x:auto}
+.tab{white-space:nowrap;background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.tab.on{background:var(--pr);color:var(--prt);border-color:var(--pr)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.nm{font-weight:700;font-size:17px}.mu{color:var(--mu);font-size:14px}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600}
+.b-er{background:var(--erb);color:var(--er)}.b-wr{background:var(--wrb);color:var(--wr)}.b-ok{background:var(--okb);color:var(--ok)}.b-mu{background:var(--bg);color:var(--mu)}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.acts a{text-decoration:none;display:inline-block;padding:11px 14px;border-radius:10px;font-weight:600;background:var(--bg);color:var(--tx);border:1px solid var(--bd)}
+.acts>*{flex:1 1 auto;text-align:center}
+.empty{text-align:center;color:var(--mu);padding:28px 0}
+.note{font-size:13px;background:var(--wrb);color:var(--wr);padding:8px 12px;border-radius:10px;margin-bottom:12px}
+@media(max-width:520px){.form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>📅 متابعة الاشتراكات</h1>
+<div id="note"></div>
+<div class="stats">
+<div class="stat hot"><b id="s1">0</b><span>محتاج اتصال</span></div>
+<div class="stat"><b id="s2">0</b><span>نشط</span></div>
+<div class="stat"><b id="s3">0</b><span>إيراد متوقع</span></div>
+</div>
+
+<div class="card">
+<div class="form">
+<div class="full"><label>اسم العميل</label><input id="fn" autocomplete="off"></div>
+<div><label>رقم الموبايل</label><input id="fp" type="tel" inputmode="tel"></div>
+<div><label>تكلفة الاشتراك</label><input id="fc" type="number" inputmode="decimal"></div>
+<div class="full"><label>تاريخ التجديد / الانتهاء</label><input id="fd" type="date"></div>
+<div class="full"><button id="add" style="width:100%">+ إضافة عميل</button></div>
+</div>
+</div>
+
+<input id="q" placeholder="🔎 ابحث بالاسم أو الرقم">
+<div class="tabs" id="tabs"></div>
+<div id="list"></div>
+</div>
+
+<script>
+(function(){
+var subs=[],tab="due",dbc=null,useLocal=false,LS="subs_v1";
+var $=function(i){return document.getElementById(i)};
+var tabsDef=[["due","محتاج اتصال"],["active","كل النشطين"],["cancelled","الملغي"]];
+
+function today(){var d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())}
+function days(s){var p=s.split("-");return Math.round((Date.UTC(+p[0],+p[1]-1,+p[2])-today())/864e5)}
+function addMonth(s){var p=s.split("-").map(Number),y=p[0],m=p[1]+1;if(m>12){m=1;y++}
+ var last=new Date(y,m,0).getDate(),d=Math.min(p[2],last);
+ return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
+function wa(ph){var n=String(ph).replace(/\D/g,"");if(n.indexOf("00")===0)n=n.slice(2);else if(n.charAt(0)==="0")n="20"+n.slice(1);return n}
+function esc(t){var d=document.createElement("div");d.textContent=t==null?"":t;return d.innerHTML}
+function fmt(s){var p=s.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+
+function load(local){
+ try{subs=JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){subs=[]}
+ render()}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(subs))}catch(e){}}
+function put(o){
+ if(useLocal){var i=subs.findIndex(function(x){return x.id===o.id});if(i<0)subs.push(o);else subs[i]=o;saveLocal();render();return}
+ var id=o.id,b=Object.assign({},o);delete b.id;
+ dbc.doc(id).set(b).catch(function(e){alert("حصلت مشكلة في الحفظ")})}
+function del(id){
+ if(useLocal){subs=subs.filter(function(x){return x.id!==id});saveLocal();render();return}
+ dbc.doc(id).delete().catch(function(){})}
+
+function startLocal(){useLocal=true;
+ $("note").innerHTML='<div class="note">.</div>';load()}
+async function init(){
+ render();
+ var t=setTimeout(function(){if(!dbc&&!useLocal)startLocal()},10000);
+ try{
+  var db=await claude.use("db");
+  if(!db){clearTimeout(t);startLocal();return}
+  dbc=db.collection("subs");
+  dbc.onSnapshot(function(s){clearTimeout(t);subs=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});render()},
+   function(){clearTimeout(t);if(!subs.length)startLocal()});
+ }catch(e){clearTimeout(t);startLocal()}
+}
+
+function view(){
+ var q=$("q").value.trim().toLowerCase();
+ return subs.filter(function(s){
+  if(q&&(s.name||"").toLowerCase().indexOf(q)<0&&String(s.phone||"").indexOf(q)<0)return false;
+  var a=s.status!=="cancelled";
+  if(tab==="cancelled")return !a;
+  if(!a)return false;
+  if(tab==="due")return days(s.expiry)<=3;
+  return true}).sort(function(a,b){return a.expiry<b.expiry?-1:1})}
+
+function render(){
+ var act=subs.filter(function(s){return s.status!=="cancelled"});
+ var due=act.filter(function(s){return days(s.expiry)<=3});
+ $("s1").textContent=due.length;$("s2").textContent=act.length;
+ $("s3").textContent=act.reduce(function(n,s){return n+(+s.price||0)},0).toLocaleString("ar-EG");
+ $("tabs").innerHTML=tabsDef.map(function(t){return '<button class="tab'+(tab===t[0]?' on':'')+'" data-t="'+t[0]+'">'+t[1]+'</button>'}).join("");
+ var items=view();
+ if(!items.length){$("list").innerHTML='<div class="empty">'+(tab==="due"?"✅ مفيش حد محتاج اتصال دلوقتي":"مفيش عملاء هنا")+'</div>';return}
+ $("list").innerHTML=items.map(function(s){
+  var d=days(s.expiry),canc=s.status==="cancelled",bd;
+  if(canc)bd='<span class="badge b-mu">ملغي</span>';
+  else if(d<0)bd='<span class="badge b-er">متأخر '+Math.abs(d)+' يوم</span>';
+  else if(d===0)bd='<span class="badge b-er">ينتهي النهاردة</span>';
+  else if(d<=3)bd='<span class="badge b-wr">باقي '+d+' يوم</span>';
+  else bd='<span class="badge b-ok">باقي '+d+' يوم</span>';
+  var h='<div class="card"><div class="row"><div><div class="nm">'+esc(s.name)+'</div><div class="mu" dir="ltr" style="text-align:right">'+esc(s.phone)+'</div></div><div style="text-align:left">'+bd+'<div class="mu">'+(+s.price||0).toLocaleString("ar-EG")+' ج · '+fmt(s.expiry)+'</div></div></div><div class="acts">';
+  if(canc){h+='<button class="sec" data-a="re" data-id="'+s.id+'">إعادة تفعيل</button><button class="sec" data-a="del" data-id="'+s.id+'">حذف</button>'}
+  else{
+   if(d<=3)h+='<a href="tel:'+esc(s.phone)+'">📞 اتصال</a><a href="https://wa.me/'+wa(s.phone)+'" target="_blank" rel="noopener">💬 واتساب</a><button class="ok" data-a="renew" data-id="'+s.id+'">✔ هيجدد</button><button class="er" data-a="cancel" data-id="'+s.id+'">✖ هيلغي</button>';
+   else h+='<a href="tel:'+esc(s.phone)+'">📞 اتصال</a><a href="https://wa.me/'+wa(s.phone)+'" target="_blank" rel="noopener">💬 واتساب</a><button class="sec" data-a="edit" data-id="'+s.id+'">تعديل</button>'}
+  return h+'</div></div>'}).join("")}
+
+document.addEventListener("click",function(e){
+ var t=e.target.closest("[data-t]");if(t){tab=t.dataset.t;render();return}
+ var b=e.target.closest("[data-a]");if(!b)return;
+ var s=subs.find(function(x){return x.id===b.dataset.id});if(!s)return;
+ var o=Object.assign({},s),a=b.dataset.a;
+ if(a==="renew"){o.expiry=addMonth(s.expiry);o.renewals=(s.renewals||0)+1;put(o)}
+ else if(a==="cancel"){if(confirm("تأكيد إلغاء اشتراك "+s.name+"؟")){o.status="cancelled";put(o)}}
+ else if(a==="re"){o.status="active";put(o)}
+ else if(a==="del"){if(confirm("حذف "+s.name+" نهائي؟"))del(s.id)}
+ else if(a==="edit"){
+  var n=prompt("الاسم",s.name);if(n===null)return;
+  var p=prompt("الموبايل",s.phone);if(p===null)return;
+  var c=prompt("التكلفة",s.price);if(c===null)return;
+  var d=prompt("تاريخ الانتهاء (YYYY-MM-DD)",s.expiry);if(d===null)return;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d)){o.name=n;o.phone=p;o.price=+c||0;o.expiry=d;put(o)}else alert("التاريخ غلط")}
+});
+$("q").addEventListener("input",render);
+$("add").addEventListener("click",function(){
+ var n=$("fn").value.trim(),p=$("fp").value.trim(),c=$("fc").value,d=$("fd").value;
+ if(!n||!p||!d){alert("اكتب الاسم والموبايل وتاريخ الانتهاء");return}
+ put({id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:n,phone:p,price:+c||0,expiry:d,status:"active",renewals:0});
+ $("fn").value=$("fp").value=$("fc").value=$("fd").value="";tab="active";render()});
+init();
+})();
+</script>
+</body>
+</html>
